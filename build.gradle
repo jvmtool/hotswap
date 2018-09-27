@@ -1,0 +1,105 @@
+apply plugin: 'idea'
+apply plugin: 'java'
+apply plugin: 'maven'
+apply plugin: 'signing'
+
+
+sourceCompatibility = JavaVersion.VERSION_1_8
+targetCompatibility = JavaVersion.VERSION_1_8
+
+group = "com.github.jvmtool"
+archivesBaseName    = "hotswap"
+version = "1.0.0"
+
+buildscript {
+    repositories {
+
+    }
+    configurations.all {
+        resolutionStrategy.cacheChangingModulesFor 0, 'seconds'
+    }
+}
+repositories {
+}
+
+
+
+dependencies {
+    compile files("${System.properties['java.home']}/../lib/tools.jar")
+}
+
+
+jar {
+    manifest {
+        attributes(
+                "Premain-Class": "com.github.jvmtool.hotswap.HotSwapAgent",
+                "Agent-Class": "com.github.jvmtool.hotswap.HotSwapAgent",
+                "Can-Retransform-Classes":"true"
+        )
+    }
+}
+
+task javadocJar(type: Jar) {
+    classifier = 'javadoc'
+    from javadoc
+}
+
+task sourcesJar(type: Jar) {
+    classifier = 'sources'
+    from sourceSets.main.allSource
+}
+
+signing {
+    sign configurations.archives
+}
+
+artifacts {
+    archives javadocJar, sourcesJar
+}
+
+
+uploadArchives {
+    repositories {
+        mavenDeployer {
+            beforeDeployment { MavenDeployment deployment -> signing.signPom(deployment) }
+
+            repository(url: "https://oss.sonatype.org/service/local/staging/deploy/maven2/") {
+                authentication(userName: ossrhUsername, password: ossrhPassword)
+            }
+
+            snapshotRepository(url: "https://oss.sonatype.org/content/repositories/snapshots/") {
+                authentication(userName: ossrhUsername, password: ossrhPassword)
+            }
+
+            pom.project {
+                name 'hotswap agent'
+                packaging 'jar'
+                // optionally artifactId can be defined here
+                description 'Replace loaded class by using java instrument API'
+                url 'http://www.example.com/example-application'
+
+                scm {
+                    connection 'scm:git:https://github.com/jvmtool/hotswap'
+                    developerConnection 'scm:git:https://github.com/jvmtool/hotswap'
+                    url 'https://github.com/jvmtool/hotswap'
+                }
+
+                licenses {
+                    license {
+                        name 'The Apache License, Version 2.0'
+                        url 'http://www.apache.org/licenses/LICENSE-2.0.txt'
+                    }
+                }
+
+                developers {
+                    developer {
+                        id 'sdojjy'
+                        name 'Jerry Jiang'
+                        email 'sdojjy@gmail.com'
+                    }
+                }
+            }
+        }
+    }
+}
+
